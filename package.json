@@ -1,0 +1,36 @@
+{
+  "name": "ghostshell",
+  "version": "0.1.0",
+  "description": "An AI-powered, voice-enabled terminal experience with a ghost personality",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "ghost": "src/index.js",
+    "ghostshell": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "test": "echo \"Error: no test specified yet\" && exit 0"
+  },
+  "keywords": [
+    "ghostshell",
+    "cli",
+    "terminal",
+    "ai",
+    "tts",
+    "elevenlabs",
+    "cloudflare-workers-ai",
+    "gemma"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "dotenv": "^16.4.7"
+  }
+}
+
