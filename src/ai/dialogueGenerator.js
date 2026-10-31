@@ -1,5 +1,5 @@
 import { cloudflareAI } from './cloudflare.js';
-import { GHOST_SYSTEM_PROMPT, FALLBACK_DIALOGUES, buildGhostPrompt } from './prompts.js';
+import { GHOST_SYSTEM_PROMPT, FALLBACK_DIALOGUES, RANDOM_FALLBACKS, buildGhostPrompt } from './prompts.js';
 import { logger } from '../utils/logger.js';
 
 /**
@@ -22,33 +22,42 @@ function sanitizeDialogue(text) {
 /**
  * Resolves a fallback dialogue for offline / unconfigured mode.
  * @param {string} command
+ * @param {object} [context]
  * @returns {string}
  */
-export function getFallbackDialogue(command) {
+export function getFallbackDialogue(command, context = {}) {
   const normalized = command.trim().toLowerCase();
 
+  // If command failed, provide contextual failure mockery
+  if (context.exitCode !== undefined && context.exitCode !== 0) {
+    return '[sinister chuckle] Oh dear... the spirits rejected your command! A tragic failure... Heh... heh... heh...';
+  }
+
   for (const [key, dialogue] of Object.entries(FALLBACK_DIALOGUES)) {
-    if (key !== 'default' && (normalized === key || normalized.startsWith(key + ' '))) {
+    if (normalized === key || normalized.startsWith(key + ' ')) {
       return dialogue;
     }
   }
 
-  return FALLBACK_DIALOGUES.default;
+  // Pick random fallback so it never repeats the exact same line
+  const idx = Math.floor(Math.random() * RANDOM_FALLBACKS.length);
+  return RANDOM_FALLBACKS[idx];
 }
 
 /**
  * Generates witty, contextual ghost dialogue for a given terminal command.
  *
  * @param {string} command - Original user shell command
+ * @param {object} [context] - Execution context (e.g. exitCode)
  * @returns {Promise<string>} Clean ghost dialogue text
  */
-export async function generateDialogue(command) {
+export async function generateDialogue(command, context = {}) {
   if (!command || !command.trim()) {
-    return 'The silence of the terminal... it calls to me...';
+    return '[whispers] The silence of the terminal... it calls to me...';
   }
 
   try {
-    const prompt = buildGhostPrompt(command.trim());
+    const prompt = buildGhostPrompt(command.trim(), context);
     const generated = await cloudflareAI.generateText({
       prompt,
       systemPrompt: GHOST_SYSTEM_PROMPT,
@@ -65,6 +74,5 @@ export async function generateDialogue(command) {
   }
 
   // Graceful fallback dialogue
-  return getFallbackDialogue(command);
+  return getFallbackDialogue(command, context);
 }
-

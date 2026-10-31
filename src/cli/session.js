@@ -32,7 +32,7 @@ export function handleBuiltinCommands(command) {
   if (normalized === 'ghost --help' || normalized === '--help' || normalized === '-h') {
     console.log(chalk.cyanBright('\nGhostShell Help:'));
     console.log('  Type any shell command (e.g. git status, ls, npm install)');
-    console.log('  The ghost will react before your command executes.');
+    console.log('  The ghost will react after your command executes.');
     console.log('\nOptions:');
     console.log('  ghost --help     Show this help screen');
     console.log('  ghost --version  Show GhostShell version');
@@ -57,11 +57,12 @@ export function handleBuiltinCommands(command) {
 }
 
 /**
- * Executes a single command through the full GhostShell pipeline:
- * 1. AI generates dialogue based on user command.
- * 2. UI renders ghost character and dialogue.
- * 3. Voice plays dialogue speech (if unmuted).
- * 4. Executor runs the UNMODIFIED original user command.
+ * Executes a single command through the GhostShell pipeline:
+ * 1. Runs the original, UNCHANGED shell command FIRST.
+ * 2. Displays the actual command output immediately.
+ * 3. AI generates contextual dialogue reacting to the completed command.
+ * 4. Renders the ghost character and dialogue.
+ * 5. Plays voice audio.
  *
  * @param {string} userCommand - Raw shell command entered by the user
  */
@@ -72,25 +73,27 @@ export async function processCommand(userCommand) {
   if (handleBuiltinCommands(userCommand)) return;
 
   try {
-    // Step 1: AI generates contextual dialogue
-    const dialogue = await generateDialogue(userCommand);
+    // Step 1: Execute original, UNCHANGED command FIRST
+    const { exitCode } = await executeCommand(userCommand);
 
-    // Step 2: UI renders ghost character
+    console.log(); // subtle spacing before ghost appears
+
+    // Step 2: AI generates contextual dialogue (aware of command & exit status)
+    const dialogue = await generateDialogue(userCommand, { exitCode });
+
+    // Step 3: UI renders ghost character
     renderGhost();
 
-    // Step 3: UI displays dialogue
+    // Step 4: UI displays dialogue
     renderDialogue(dialogue);
 
-    // Step 4: Voice synthesis and audio playback
+    // Step 5: Voice synthesis and audio playback
     if (!config.audio.muted) {
       const audioBuffer = await elevenlabsVoice.synthesizeSpeech({ text: dialogue });
       if (audioBuffer) {
         await audioPlayer.play(audioBuffer);
       }
     }
-
-    // Step 5: Execute original, UNCHANGED command
-    await executeCommand(userCommand);
   } catch (err) {
     logger.error('Session processing error:', err.message);
   } finally {
@@ -114,4 +117,3 @@ export async function startSession() {
     }
   }
 }
-

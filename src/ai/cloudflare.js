@@ -52,7 +52,8 @@ export class CloudflareAIClient {
       }
 
       const data = await response.json();
-      return data?.result?.response?.trim() || null;
+      const text = data?.result?.choices?.[0]?.message?.content || data?.result?.response;
+      return text?.trim() || null;
     } catch (error) {
       logger.error('Failed to communicate with Cloudflare Workers AI:', error.message);
       return null;
